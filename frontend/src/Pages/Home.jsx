@@ -1,21 +1,12 @@
 import React from 'react';
-import SideBar from '../Layout/SideBar';
+import Graph from '../Component/Graph';
 
-const Home = ({ API_URL }) => {
+const Home = ({ shop, setShop, API_URL }) => {
     return (
-        <div className='row'>
-            <div className="col-3">
-                <SideBar />
-            </div>
-            <div className="col-9">
-                <Content />
-            </div>
+        <div>
+            <Graph shop={shop} />
         </div>
     )
-}
-
-const Content = () => {
-    return "TETS"
 }
 
 export default Home;
