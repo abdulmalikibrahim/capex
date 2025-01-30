@@ -1,60 +1,41 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const SideBar = ({ setShop }) => {
+const buttonData = [
+    { label: 'PRESS', value: 'PRESS', col: 'col-12' },
+    { label: 'BODY1', value: 'BODY1', col: 'col-6 pe-1' },
+    { label: 'BODY2', value: 'BODY2', col: 'col-6 ps-1' },
+    { label: 'TOSO1', value: 'TOSO1', col: 'col-6 pe-1' },
+    { label: 'TOSO2', value: 'TOSO2', col: 'col-6 ps-1' },
+    { label: 'ASSY1', value: 'ASSY1', col: 'col-6 pe-1' },
+    { label: 'ASSY2', value: 'ASSY2', col: 'col-6 ps-1' },
+    { label: 'QUALITY1', value: 'QUALITY1', col: 'col-6 pe-1' },
+    { label: 'QUALITY2', value: 'QUALITY2', col: 'col-6 ps-1' },
+    { label: 'LID1', value: 'LID1', col: 'col-6 pe-1' },
+    { label: 'LID2', value: 'LID2', col: 'col-6 ps-1' },
+    { label: 'MTN1', value: 'MTN1', col: 'col-6 pe-1' },
+    { label: 'MTN2', value: 'MTN2', col: 'col-6 ps-1' },
+    { label: 'GAOP3', value: 'GAOP3', col: 'col-12' },
+    { label: 'PCD', value: 'PCD', col: 'col-12' },
+    { label: 'QSS', value: 'QSS', col: 'col-12' },
+];
+
+const SideBar = ({ shop, setShop }) => {
     return(
         <div>
             <div className="row">
                 <div className="col-12" style={{ background:"url(/Assets/Logo/logoDaihatsu.png)", height:"80px", backgroundSize:"110%", backgroundRepeat:"no-repeat", backgroundPosition:"center"}}>
                 </div>
-                <div className="mt-2 col-12">
-                    <button onClick={() => {setShop("PRESS")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">PRESS</button>
-                </div>
-                <div className="mt-2 col-6 pe-1">
-                    <button onClick={() => {setShop("BODY1")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">BODY1</button>
-                </div>
-                <div className="mt-2 col-6 ps-1">
-                    <button onClick={() => {setShop("BODY2")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">BODY2</button>
-                </div>
-                <div className="mt-2 col-6 pe-1">
-                    <button onClick={() => {setShop("TOSO1")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">TOSO1</button>
-                </div>
-                <div className="mt-2 col-6 ps-1">
-                    <button onClick={() => {setShop("TOSO2")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">TOSO2</button>
-                </div>
-                <div className="mt-2 col-6 pe-1">
-                    <button onClick={() => {setShop("ASSY1")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">ASSY1</button>
-                </div>
-                <div className="mt-2 col-6 ps-1">
-                    <button onClick={() => {setShop("ASSY2")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">ASSY2</button>
-                </div>
-                <div className="mt-2 col-6 pe-1">
-                    <button onClick={() => {setShop("QUALITY1")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">QUALITY1</button>
-                </div>
-                <div className="mt-2 col-6 ps-1">
-                    <button onClick={() => {setShop("QUALITY2")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">QUALITY2</button>
-                </div>
-                <div className="mt-2 col-6 pe-1">
-                    <button onClick={() => {setShop("LID1")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">LID1</button>
-                </div>
-                <div className="mt-2 col-6 ps-1">
-                    <button onClick={() => {setShop("LID2")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">LID2</button>
-                </div>
-                <div className="mt-2 col-6 pe-1">
-                    <button onClick={() => {setShop("MTN1")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">MTN1</button>
-                </div>
-                <div className="mt-2 col-6 ps-1">
-                    <button onClick={() => {setShop("MTN2")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">MTN2</button>
-                </div>
-                <div className="mt-2 col-12">
-                    <button onClick={() => {setShop("GAOP3")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">GAOP3</button>
-                </div>
-                <div className="mt-2 col-12">
-                    <button onClick={() => {setShop("PCD")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">PCD</button>
-                </div>
-                <div className="mt-2 col-12">
-                    <button onClick={() => {setShop("QSS")}} className="btn btn-info border border-dark w-100 fw-bold fs-5">GAOP3</button>
-                </div>
+                {buttonData.map(({ label, value, col }) => (
+                    <div className={`mt-2 ${col}`} key={value}>
+                    <button
+                        onClick={() => setShop(value)}
+                        className={`btn ${shop === value ? 'btn-primary' : 'btn-info'} border border-dark w-100 fw-bold fs-5`}
+                    >
+                        {label}
+                    </button>
+                    </div>
+                ))}
                 <div className="mt-2 col-12">
                     <Link to={"/tablemonitoring"} className="btn btn-warning border border-dark w-100 fw-bold fs-5">Table Monitoring</Link>
                 </div>

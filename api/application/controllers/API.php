@@ -1,263 +1,194 @@
 <?php
 class API extends MY_Controller {
-    function getCabor()
+    function dataCapex()
     {
-        $this->form_validation->set_rules('code', 'Code Cabor', 'trim|required');
+        $this->form_validation->set_rules('shop', 'Shop', 'trim|required');
+        if ($this->form_validation->run() === FALSE) {
+            $fb = ["statusCode" => 500, "res" => validation_errors()];
+            $this->fb($fb);
+        }
+        $shop = $this->input->post("shop");
+
+        $dataPlan = [];
+        $plan = $this->getDataCapex("plan",$shop);
+        foreach ($plan as $plan) {
+            $dataPlan[] = floatval(round($plan->Budget,2));
+        }
+
+        $dataActual = [];
+        $actual = $this->getDataCapex("actual",$shop);
+        foreach ($actual as $actual) {
+            $dataActual[] = floatval(round($actual->Actual,2));
+        }
+
+        $dataBFOS = [];
+        $bfos = $this->getDataCapex("bfos",$shop);
+        foreach ($bfos as $bfos) {
+            $dataBFOS[] = floatval(round($bfos->Nominal_BFOS,2));
+        }
+
+        $dataBTOS = [];
+        $btos = $this->getDataCapex("btos",$shop);
+        foreach ($btos as $btos) {
+            $dataBTOS[] = floatval(round($btos->Nominal_BTOS,2));
+        }
+
+        $fb = ["statusCode" => 200, "res" => ["plan" => $dataPlan, "actual" => $dataActual, "bfos" => $dataBFOS, "btos" => $dataBTOS]];
+        $this->fb($fb);
+    }
+
+    private function getDataCapex($tipe,$shop)
+    {
+        if($tipe == "plan"){
+            $columnValue = "Budget";
+            $columnMonth = "Month_Plan";
+        }else if($tipe == "actual"){
+            $columnValue = "Actual";
+            $columnMonth = "Month";
+        }else if($tipe == "bfos"){
+            $columnValue = "Nominal_BFOS";
+            $columnMonth = "Month_BFOS";
+        }else if($tipe == "btos"){
+            $columnValue = "Nominal_BTOS";
+            $columnMonth = "Month_BTOS";
+        }
+
+        $query = "
+        WITH months AS (
+            SELECT 1 AS $columnMonth UNION ALL
+            SELECT 2 UNION ALL
+            SELECT 3 UNION ALL
+            SELECT 4 UNION ALL
+            SELECT 5 UNION ALL
+            SELECT 6 UNION ALL
+            SELECT 7 UNION ALL
+            SELECT 8 UNION ALL
+            SELECT 9 UNION ALL
+            SELECT 10 UNION ALL
+            SELECT 11 UNION ALL
+            SELECT 12
+        )
+        SELECT 
+            m.$columnMonth, 
+            COALESCE(SUM(d.$columnValue), 0) AS $columnValue
+        FROM 
+            months m
+        LEFT JOIN `datacapex` d 
+            ON m.$columnMonth = d.$columnMonth AND d.shop = '".$shop."'
+        GROUP BY m.$columnMonth
+        ORDER BY FIELD(m.$columnMonth, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3);
+        ";
+        $data = $this->model->query_exec($query,"result");
+        return $data;
+    }
+
+    function getDataTable()
+    {
+        $this->form_validation->set_rules('shop', 'Shop', 'trim|required');
+        $this->form_validation->set_rules('tipe', 'Tipe', 'trim|required');
         if ($this->form_validation->run() === FALSE) {
             $fb = ["statusCode" => 500, "res" => validation_errors()];
             $this->fb($fb);
         }
 
-        $code = $this->input->post("code");
-        $getData = $this->model->gd("cabor","*","code = '$code'","row");
-        $fb = ["statusCode" => 200, "res" => $getData];
-        $this->fb($fb);
-    }
-    
-    function updateScore()
-    {
-        $this->form_validation
-            ->set_rules('id', 'ID', 'integer|trim|required')
-            ->set_rules('team', 'Team', 'trim|required')
-            ->set_rules('score', 'Score', 'integer|trim|required');
-
-        if ($this->form_validation->run() === FALSE) {
-            $fb = ["statusCode" => 500, "res" => validation_errors()];
-            $this->fb($fb);
-        }
-
-        $team = $this->input->post("team");
-        $score = $this->input->post("score");
-        $id = $this->input->post("id");
-        if($team == "team1"){
-            $columnScore = "score_team1";
-        }else{
-            $columnScore = "score_team2";
-        }
-        $dataUpdate = [$columnScore => $score];
-        $updateData = $this->model->update("jadwal_acara","id = '$id'",$dataUpdate);
-        $fb = ["statusCode" => 200, "res" => "Score berhasil update"];
-        $this->fb($fb);
-    }
-    
-    function updateWinner()
-    {
-        $this->form_validation
-            ->set_rules('id', 'ID', 'integer|trim|required')
-            ->set_rules('team1', 'Team 1', 'trim|required')
-            ->set_rules('team2', 'Team 2', 'trim|required')
-            ->set_rules('namaTeam', 'Nama Team', 'trim|required');
-
-        if ($this->form_validation->run() === FALSE) {
-            $fb = ["statusCode" => 500, "res" => validation_errors()];
-            $this->fb($fb);
-        }
-
-        $id = $this->input->post("id");
-        $team1 = $this->input->post("team1");
-        $team2 = $this->input->post("team2");
-        $namaTeam = $this->input->post("namaTeam");
-
-        if($namaTeam == $team1){
-            $dataUpdate = [
-                "winner" => $team1,
-                "loose" => $team2
-            ];
-        }else{
-            $dataUpdate = [
-                "winner" => $team2,
-                "loose" => $team1
-            ];
-        }
-        
-        $updateData = $this->model->update("jadwal_acara","id = '$id'",$dataUpdate);
-        $fb = ["statusCode" => 200, "res" => "Winner berhasil update"];
-        $this->fb($fb);
-    }
-
-    function getRundown()
-    {
-        $getData = $this->model->join_data("jadwal_acara","cabor","jadwal_acara.code_cabor=cabor.code","*","jadwal_acara.id != '' AND team1 != '' AND team2 != '' ORDER BY mulai, lokasi ASC","result");
-        $currentTime = strtotime(date("Y-m-d H:i:s"));
-        // $currentTime = strtotime("08:40:00");
-        $dataRundown = [];
-        if(!empty($getData)){
-            foreach ($getData as $getData) {
-                $team1 = $getData->team1;
-                if(substr_count($team1,"#T") > 0){
-                    $team1 = $getData->team1;
-                    if($getData->tipe_winner != "3"){
-                        $getTeam1 = $this->model->gd("jadwal_acara","winner","kode = '$team1'","row");
-                        $team1 = !empty($getTeam1->winner) ? $getTeam1->winner : "-";
-                    }else{
-                        $getTeam1 = $this->model->gd("jadwal_acara","loose","kode = '$team1'","row");
-                        $team1 = !empty($getTeam1->loose) ? $getTeam1->loose : "-";
-                    }
-                }
-                
-                $team2 = $getData->team2;
-                if(substr_count($team2,"#T") > 0){
-                    if($getData->tipe_winner != "3"){
-                        $getTeam2 = $this->model->gd("jadwal_acara","winner","kode = '$team2'","row");
-                        $team2 = !empty($getTeam2->winner) ? $getTeam2->winner : "-";
-                    }else{
-                        $getTeam2 = $this->model->gd("jadwal_acara","loose","kode = '$team2'","row");
-                        $team2 = !empty($getTeam2->loose) ? $getTeam2->loose : "-";
-                    }
-                }
-
-                $status = "";
-                if(strtotime($getData->mulai) > $currentTime){
-                    $status = "upcoming";
-                }else if(strtotime($getData->selesai) >= $currentTime && strtotime($getData->mulai) <= $currentTime){
-                    $status = "playing";
-                }else if(strtotime($getData->selesai) < $currentTime){
-                    $status = "finished";
-                }
-
-                $tipeWinner = !empty($getData->tipe_winner) ? $getData->tipe_winner : "other";
-                $dataRundown[$getData->code][] = [
-                    "cabor" => strtoupper($getData->cabor),
-                    "code_cabor" => $getData->code_cabor,
-                    "mulai" => date("H:i",strtotime($getData->mulai)),
-                    "selesai" => $getData->selesai,
-                    "durasi" => $getData->durasi,
-                    "team1" => $team1,
-                    "team2" => $team2,
-                    "score_team1" => $getData->score_team1,
-                    "score_team2" => $getData->score_team2,
-                    "tipe_winner" => $tipeWinner,
-                    "lokasi" => $getData->lokasi,
-                    "picture" => $getData->picture,
-                    "status" => $status,
-                    "winner" => $getData->winner,
-                ];
-            }
-        }
-        $fb = ["statusCode" => 200, "res" => $dataRundown];
-        $this->fb($fb);
-    }
-
-    function getCurrentRundown()
-    {
-        if(empty($this->input->get("input"))){
-            $getData = $this->model->join_data("jadwal_acara","cabor","jadwal_acara.code_cabor=cabor.code","*","jadwal_acara.id != '' AND team1 != '' AND team2 != '' AND active = '1' ORDER BY cabor, mulai, lokasi ASC","result");
-        }else{
-            $getData = $this->model->join_data("jadwal_acara","cabor","jadwal_acara.code_cabor=cabor.code","*","jadwal_acara.id != '' AND team1 != '' AND team2 != '' ORDER BY cabor, mulai, lokasi ASC","result");
-        }
-        $currentTime = date("H:i:s");
-        $dataRundown = [];
-        if(!empty($getData)){
-            foreach ($getData as $getData) {
-                $team1 = $getData->team1;
-                if(substr_count($team1,"#T") > 0){
-                    $team1 = $getData->team1;
-                    if($getData->tipe_winner != "3"){
-                        $getTeam1 = $this->model->gd("jadwal_acara","winner","kode = '$team1'","row");
-                        $team1 = !empty($getTeam1->winner) ? $getTeam1->winner : "-";
-                    }else{
-                        $getTeam1 = $this->model->gd("jadwal_acara","loose","kode = '$team1'","row");
-                        $team1 = !empty($getTeam1->loose) ? $getTeam1->loose : "-";
-                    }
-                }
-                
-                $team2 = $getData->team2;
-                if(substr_count($team2,"#T") > 0){
-                    if($getData->tipe_winner != "3"){
-                        $getTeam2 = $this->model->gd("jadwal_acara","winner","kode = '$team2'","row");
-                        $team2 = !empty($getTeam2->winner) ? $getTeam2->winner : "-";
-                    }else{
-                        $getTeam2 = $this->model->gd("jadwal_acara","loose","kode = '$team2'","row");
-                        $team2 = !empty($getTeam2->loose) ? $getTeam2->loose : "-";
-                    }
-                }
-
-                $status = "";
-                if(!empty($this->input->get("input"))){
-                    if(strtotime($getData->mulai) > $currentTime){
-                        $status = "upcoming";
-                    }else if(strtotime($getData->selesai) >= $currentTime && strtotime($getData->mulai) <= $currentTime){
-                        $status = "playing";
-                    }else if(strtotime($getData->selesai) < $currentTime){
-                        $status = "finished";
-                    }
-                }else{
-                    $status = "playing";
-                }
-                
-                $tipeWinner = !empty($getData->tipe_winner) ? $getData->tipe_winner : "other";
-                $data = [
-                    "id" => $getData->id,
-                    "cabor" => strtoupper($getData->cabor),
-                    "code_cabor" => $getData->code_cabor,
-                    "mulai" => date("H:i",strtotime($getData->mulai)),
-                    "selesai" => date("H:i",strtotime($getData->selesai)),
-                    "durasi" => $getData->durasi,
-                    "team1" => $team1,
-                    "team2" => $team2,
-                    "tipe_winner" => $tipeWinner,
-                    "lokasi" => $getData->lokasi,
-                    "picture" => $getData->picture,
-                    "status" => $status,
-                    "winner" => $getData->winner,
-                    "score_team1" => ($getData->score_team1 != NULL) ? $getData->score_team1 : "0",
-                    "score_team2" => ($getData->score_team2 != NULL) ? $getData->score_team2 : "0",
-                    "active" => $getData->active,
-                ];
-                if(empty($this->input->get("input"))){
-                    $dataRundown[] = $data;
-                }else{
-                    $dataRundown[$getData->code][] = $data;
-                }
-            }
-        }
-        $fb = ["statusCode" => 200, "res" => $dataRundown];
-        $this->fb($fb);
-    }
-
-    public function updateEventBerlangsung()
-    {
-        $id = $this->input->post("id");
-        $active = $this->input->post("active");
-
-        $dataInput = ["active" => $active];
-        $update = $this->model->update("jadwal_acara","id = '$id'",$dataInput);
-        $fb = ["statusCode" => 200, "res" => "Data berhasil update", "data" => [$id,$active]];
-        $this->fb($fb);
-    }
-
-    public function getTeamArisan()
-    {
-        $team = $this->input->post("team");
-        $getData = $this->model->gd("arisan","*","id = '$team'","row");
-        $fb = ["statusCode" => 200, "res" => $getData];
-        $this->fb($fb);    
-    }
-
-    public function getAllTeamArisan()
-    {
-        $getData = $this->model->gd("arisan","*","id !=","result");
-        $fb = ["statusCode" => 200, "res" => $getData];
-        $this->fb($fb);    
-    }
-
-    public function updateScoreArisan()
-    {
-        $team = $this->input->post("team");
+        $shop = $this->input->post("shop");
         $tipe = $this->input->post("tipe");
-        $value = $this->input->post("value");
-        $inputData = [$tipe => $value];
-        
-        $this->model->update("arisan","id = '$team'",$inputData);
-        $fb = ["statusCode" => 200, "res" => "Data berhasil update"];
+        if($tipe == "plan"){
+            $returnData = $this->model->gd("datacapex","Id,Category,Invest,Month_Plan as Month,Budget","shop = '$shop' AND Budget != ''","result");
+        }else if($tipe == "actual"){
+            $returnData = $this->model->gd("datacapex","Id,Category,Invest,Month_Plan as Month,Actual as Budget","shop = '$shop' AND Actual != '' AND BTOS = ''","result");
+        }else if($tipe == "bfos"){
+            $returnData = $this->model->gd("datacapex","Id,Category,Invest,BFOS as OtherShop,Month_BFOS as Month,Nominal_BFOS as Budget","shop = '$shop' AND BFOS != ''","result");
+        }else if($tipe == "btos"){
+            $returnData = $this->model->gd("datacapex","Id,Category,Invest,BTOS as OtherShop,Month_BTOS as Month,Nominal_BTOS as Budget","shop = '$shop' AND BTOS != ''","result");
+        }
+        $fb = ["statusCode" => 200, "res" => $returnData];
         $this->fb($fb);
     }
 
-    public function resetArisan()
+    private function checkInputCapex()
     {
-        $inputData = ["contingen" => NULL, "score" => "0"];
-        $this->model->update("arisan","id !=",$inputData);
-        $fb = ["statusCode" => 200, "res" => "Data berhasil update"];
+        $tipe = $this->input->post("tipe");
+        $this->form_validation
+            ->set_rules('id',"ID","trim|required")
+            ->set_rules('category',"Category","trim|required")
+            ->set_rules('invest',"Invest","trim|required")
+            ->set_rules('month',"Month","trim|required") 
+            ->set_rules('budget',"Budget","trim|required")
+            ->set_rules('tipe',"Tipe","trim|required")
+            ->set_rules('shop',"Shop","trim|required");
+        if($tipe == "bfos" || $tipe == "btos"){
+            $this->form_validation->set_rules('otherShop',"Other Shop","trim");
+        }
+        
+        if ($this->form_validation->run() === FALSE) {
+            $fb = ["statusCode" => 500, "res" => validation_errors()];
+            $this->fb($fb);
+        }
+    }
+
+    function prosesCapex($method) //METHOD ADD OR UPDATE
+    {
+        $this->checkInputCapex();
+
+        $id = $this->input->post("id");
+        $category = $this->input->post("category");
+        $invest = $this->input->post("invest");
+        $month = $this->input->post("month");
+        $otherShop = $this->input->post("otherShop");
+        $budget = str_replace(",",".",$this->input->post("budget"));
+        $shop = $this->input->post("shop");
+        $tipe = $this->input->post("tipe");
+
+        $input = [
+            "Category" => $category,
+            "Invest" => $invest,
+            "shop" => $shop,
+        ];
+        if($tipe == "plan"){
+            $input["Month_Plan"] = $month;
+            $input["Budget"] = $budget;
+        }else if($tipe == "actual"){
+            $input["Month"] = $month;
+            $input["Actual"] = $budget;
+        }else if($tipe == "bfos"){
+            $input["BFOS"] = $otherShop;
+            $input["Month_BFOS"] = $month;
+            $input["Nominal_BFOS"] = $budget;
+        }else if($tipe == "btos"){
+            $input["BTOS"] = $otherShop;
+            $input["Month_BTOS"] = $month;
+            $input["Nominal_BTOS"] = $budget;
+        }
+
+        if($method == "update"){
+            $proses = $this->model->update("datacapex","Id = '$id'",$input);
+        }else if($method == "add"){
+            $proses = $this->model->insert("datacapex",$input);
+        }
+        if($proses){
+            $fb = ["statusCode" => 200, "res" => "Data berhasil di update"];
+        }else{
+            $fb = ["statusCode" => 500, "res" => "Data gagal di update"];
+        }
+        $this->fb($fb);
+    }
+
+    function deleteCapex()
+    {
+        $this->form_validation->set_rules('id',"ID","trim|required");
+        if ($this->form_validation->run() === FALSE) {
+            $fb = ["statusCode" => 500, "res" => validation_errors()];
+            $this->fb($fb);
+        }
+
+        $id = $this->input->post("id");
+        $delete = $this->model->delete("datacapex","id = '$id'");
+        if($delete){
+            $fb = ["statusCode" => 200, "res" => "Data berhasil di hapus"];
+        }else{
+            $fb = ["statusCode" => 500, "res" => "Data gagal di hapus"];
+        }
         $this->fb($fb);
     }
 }
