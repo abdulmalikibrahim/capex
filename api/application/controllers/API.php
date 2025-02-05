@@ -191,4 +191,168 @@ class API extends MY_Controller {
         }
         $this->fb($fb);
     }
+
+    function getDataCapexAdd()
+    {
+        $shop = $this->input->post("shop");
+        $month_3 = $this->input->post("month_3");
+        $month = $month_3;
+        if($month_3 == "01") {
+            $month = 13;
+        }else if($month_3 == "02") {
+            $month = 14;
+        }else if($month_3 == "03") {
+            $month = 15;
+        }
+        $dataInvest = ["Improvement","Replacement"];
+
+        $newDataCallBack["Improvement"] = [];
+        $newDataCallBack["Replacement"] = [];
+        foreach ($dataInvest as $key => $value) {
+            $getData = $this->model->gd("datacapex","*","shop = '$shop' AND Budget != '' AND Invest = '$value' AND Month_Plan <= $month","result");
+            foreach ($getData as $row) {
+                $actual = $this->model->gd("datacapex","SUM(Actual) as total","shop = '$shop' AND (activity_BTOS = '".$row->Id."' OR activity_BFOS = '".$row->Id."')","row");
+                $bfosSelf = $this->model->gd("datacapex","SUM(Nominal_BFOS) as total","BFOS = '$shop' AND activity_BFOS = '".$row->Id."'","row");
+                $ActualBudget = !empty($row->Actual) ? $row->Actual : 0;
+                $ActualBFOSorBTOS = $actual->total + $bfosSelf->total;
+                $mPlan = $row->Month_Plan+3;
+                $date = "2020-".$mPlan."-01";
+                $budget = $row->Budget - $ActualBudget - $ActualBFOSorBTOS;
+                $prevUsage = $ActualBudget + $ActualBFOSorBTOS;
+                $MonthPlan = date("M",strtotime($date));
+                $full = $budget <= 0 ? "full" : "";
+                $class = $budget <= 0 ? "bg-secondary text-light" : "";
+                $newDataCallBack[$value][] = [
+                    "id" => $row->Id,
+                    "category" => $row->Category,
+                    "planBudget" => $row->Budget,
+                    "prevUsage" => round($prevUsage,3),
+                    "budget" => round($budget,3),
+                    "monthPlan" => $MonthPlan,
+                    "full" => $full,
+                    "class" => $class
+                ];
+            }
+        }
+        $fb = ["statusCode" => 200, "res" => $newDataCallBack];
+        $this->fb($fb);
+    }
+
+    function saveDataActivity()
+    {
+        // Ambil raw JSON dari body request
+        $jsonData = file_get_contents("php://input");
+
+        // Ubah JSON menjadi array asosiatif
+        $data = json_decode($jsonData, true);
+
+        // Cek apakah JSON valid
+        if (!is_array($data)) {
+            $fb = ["statusCode" => 500, "res" => "Invalid request JSON"];
+            $this->fb($fb);
+        }
+
+        $monthActual = (date("m")*1);
+        $ia = $data["ia"] ?? null;
+        if(empty($ia)){
+            $fb = ["statusCode" => 500, "res" => "IA tidak boleh kosong"];
+            $this->fb($fb);
+        }
+        $shop = $data["shop"] ?? null;
+        $investment = $data["investment"] ?? null;
+        $description = $data["description"] ?? null;
+        $useBudget = isset($data["useBudget"]) ? json_decode($data["useBudget"], true) : [];
+        $useBudgetOther = isset($data["useBudgetOther"]) ? json_decode($data["useBudgetOther"], true) : [];
+
+        $getIANumber = $this->model->gd("datacapex","Id","No_IA = '$ia' AND shop = '$shop'","row");
+        $getCategory = $this->model->gd("datacapex","Id,Category,shop","Category = '$description' AND shop = '$shop'","row");
+        if(!empty($useBudget) && is_array($useBudget)){
+            foreach ($useBudget as $key => $value) {
+                if($getCategory->Id == $key){
+                    //UPDATE ACTUAL
+                    $submitActual = [
+                        "Actual" => $value,
+                        "Month" => $monthActual,
+                        "No_IA" => $ia,
+                    ];
+                    $proses = $this->model->update("datacapex","id = '$key'",$submitActual);
+                    if(!$proses){
+                        $fb = ["statusCode" => 500, "res" => "Gagal update data actual"];
+                        $this->fb($fb);
+                    }
+                }else{
+                    //UPDATE BFOS
+                    $datasubmit = [
+                        "Category" => $description,
+                        "Invest" => $investment,
+                        "BFOS" => $shop,
+                        "activity_BFOS" => $key,
+                        "Nominal_BFOS" => $value,
+                        "Month_BFOS" => $monthActual,
+                        "No_IA" => $ia,
+                        "shop" => $shop
+                    ];
+                    if(!empty($getIANumber->Id)){
+                        //GET DATA ID BY ACTIVITY BFOS
+                        $idBFOS = $this->model->gd("datacapex","Id","activity_BFOS = '$key' AND shop = '$shop' AND No_IA = '$ia'","row");
+                        $proses = $this->model->update("datacapex","Id = '$idBFOS->Id'",$datasubmit);
+                    }else{
+                        $proses = $this->model->insert("datacapex",$datasubmit);
+                    }
+                    if(!$proses){
+                        $fb = ["statusCode" => 500, "res" => "Gagal input data BFOS"];
+                        $this->fb($fb);
+                    }
+                }
+            }
+        }
+
+        if(!empty($useBudgetOther) && is_array($useBudgetOther)){
+            foreach ($useBudgetOther as $key => $value) {
+                $getDetail = $this->model->gd("datacapex","id,shop","id = '$key'","row");
+                //INPUT BTOS
+                $dataSubmitBTOS = [
+                    "Category" => $description,
+                    "Invest" => $investment,
+                    "BTOS" => $shop,
+                    "Nominal_BTOS" => $value,
+                    "activity_BTOS" => $key,
+                    "Month_BTOS" => $monthActual,
+                    "No_IA" => $ia,
+                    "shop" => $getDetail->shop,
+                ];
+                
+                //INPUT BFOS
+                $dataSubmitBFOS = [
+                    "Category" => $description,
+                    "Invest" => $investment,
+                    "BFOS" => $getDetail->shop,
+                    "Nominal_BFOS" => $value,
+                    "activity_BFOS" => $key,
+                    "Month_BFOS" => $monthActual,
+                    "No_IA" => $ia,
+                    "shop" => $shop,
+                ];
+                
+                if(!empty($getIANumber->Id)){
+                    //GET DATA ID BY ACTIVITY BTOS
+                    $idBTOS = $this->model->gd("datacapex","Id","activity_BTOS = '$key' AND shop = '$getDetail->shop' AND No_IA = '$ia'","row");
+                    $proses = $this->model->update("datacapex","Id = '$idBTOS->Id'",$dataSubmitBTOS);
+                    //GET DATA ID BY ACTIVITY BFOS
+                    $idBFOS = $this->model->gd("datacapex","Id","activity_BFOS = '$key' AND shop = '$shop' AND No_IA = '$ia'","row");
+                    $proses = $this->model->update("datacapex","Id = '$idBFOS->Id'",$dataSubmitBFOS);
+                }else{
+                    $proses = $this->model->insert("datacapex",$dataSubmitBFOS);
+                    $proses = $this->model->insert("datacapex",$dataSubmitBTOS);
+                }
+                if(!$proses){
+                    $fb = ["statusCode" => 500, "res" => "Gagal input data BTOS"];
+                    $this->fb($fb);
+                }
+            }
+        }
+
+        $fb = ["statusCode" => 200, "res" => "Data berhasil diupdate"];
+        $this->fb($fb);
+    }
 }

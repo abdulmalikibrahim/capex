@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Graph from '../Component/Graph';
 import { Button, Modal } from 'react-bootstrap';
 import ButtonAction from '../Component/ButtonAction';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 
 const Home = ({shop,API_URL,showAlert}) => {
     // Custom plugin untuk menampilkan label di atas batang
@@ -15,11 +17,12 @@ const Home = ({shop,API_URL,showAlert}) => {
     };
 
     const [reloadData,setReloadData] = useState(false)
-    const [show, setShow] = useState(false);
-    const handleCloseDetail = () => setShow(false);
-    const handleShowDetail = () => setShow(true);
-    const handleCloseAdd = () => setShow(false);
-    const handleShowAdd = () => setShow(true);
+    const [showDetail, setShowDetail] = useState(false);
+    const [showAdd, setShowAdd] = useState(false);
+    const handleCloseDetail = () => setShowDetail(false);
+    const handleShowDetail = () => setShowDetail(true);
+    const handleCloseAdd = () => setShowAdd(false);
+    const handleShowAdd = () => setShowAdd(true);
 
     // Membuat data chart
     const [dataPlan, setDataPlan] = useState([]);
@@ -42,7 +45,8 @@ const Home = ({shop,API_URL,showAlert}) => {
             setDataBFOS(bfos);
             setDataBTOS(btos);
         } catch (error) {
-            showAlert('Error',(error.response.data ? error.response.data.res : "Mohon maaf ada kesalahan tak terduga"),"error")
+            showAlert('Error',"Mohon maaf ada kesalahan tak terduga","error")
+            console.error(error.response)
         }
     };
     useEffect(() => {
@@ -84,11 +88,33 @@ const Home = ({shop,API_URL,showAlert}) => {
         { key: "table-detail-bfos", title: "BUDGET FROM OTHER SHOP", tipe: "bfos", data: dataBFOSTable },
         { key: "table-detail-btos", title: "BUDGET TO OTHER SHOP", tipe: "btos", data: dataBTOSTable }
     ];
+
+    const [loadingPrint,setloadingPrint] = useState(false)
+    const pdfRef = useRef();
+    const generatePDF = () => {
+        setloadingPrint(true)
+        const input = pdfRef.current;
+        const fileName = `${shop}-Graph.pdf`;
+        html2canvas(input).then((canvas) => {
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF("l", "mm", "a4");
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = 297; // A4 width in mm
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            // Hitung posisi tengah
+            const x = (pageWidth - imgWidth) / 2;
+            const y = (pageHeight - imgHeight) / 2;
+            pdf.addImage(imgData, "PNG", x, y, imgWidth, imgHeight);
+            pdf.save(fileName);
+            setloadingPrint(false)
+        });
+    };
     return (
         <div>
-            <Graph formatNumber={formatNumber} dataPlan={dataPlan} dataActual={dataActual} dataBFOS={dataBFOS} dataBTOS={dataBTOS} />
-            <ButtonAction handleShowDetail={handleShowDetail} handleShowAdd={handleShowAdd} />
-            <ModalDetail handleCloseDetail={handleCloseDetail} show={show}>
+            <Graph pdfRef={pdfRef} formatNumber={formatNumber} dataPlan={dataPlan} dataActual={dataActual} dataBFOS={dataBFOS} dataBTOS={dataBTOS} shop={shop} />
+            <ButtonAction handleShowDetail={handleShowDetail} handleShowAdd={handleShowAdd} generatePDF={generatePDF} loadingPrint={loadingPrint} />
+            <ModalDetail handleCloseDetail={handleCloseDetail} show={showDetail}>
                 {
                     tableDetails.map(({key,title,tipe,data}) => (
                         <TableDetail
@@ -105,6 +131,15 @@ const Home = ({shop,API_URL,showAlert}) => {
                     ))
                 }
             </ModalDetail>
+            <ModalAdd handleCloseAdd={handleCloseAdd} show={showAdd}>
+                <FormAdd
+                    API_URL={API_URL}
+                    shop={shop}
+                    showAlert={showAlert}
+                    handleCloseAdd={handleCloseAdd}
+                    reloadData={reloadData}
+                    setReloadData={setReloadData} />
+            </ModalAdd>
         </div>
     )
 }
@@ -115,7 +150,7 @@ const ModalDetail = ({children,handleCloseDetail,show}) => {
         <Modal show={show} onHide={() => handleCloseDetail()} dialogClassName="modal-80w" aria-labelledby="example-custom-modal-styling-title">
             <Modal.Header closeButton>
                 <Modal.Title id="example-custom-modal-styling-title">
-                    Custom Modal Styling
+                    Detail Data
                 </Modal.Title>
             </Modal.Header>
             <Modal.Body>
@@ -174,8 +209,8 @@ const TableDetail = ({dataDetail,title,tipe,formatNumber,API_URL,showAlert,reloa
                 setReloadData(!reloadData)
             }
         } catch (error) {
-            showAlert("Error",(error.response.data ? error.response.data.res : "Maaf ada kesalahan tak terduga"),"error");
-            console.error(error)
+            showAlert("Error","Maaf ada kesalahan tak terduga","error");
+            console.error(error.response)
         }
     }
 
@@ -206,8 +241,8 @@ const TableDetail = ({dataDetail,title,tipe,formatNumber,API_URL,showAlert,reloa
                 setReloadData(!reloadData)
             }
         } catch (error) {
-            showAlert("Error",(error.response.data ? error.response.data.res : "Maaf ada kesalahan tak terduga"),"error");
-            console.error(error)
+            showAlert("Error","Maaf ada kesalahan tak terduga","error");
+            console.error(error.response)
         }
     }
 
@@ -399,19 +434,282 @@ const FormAddData = ({setCategory,setInvest,setOtherShop,setMonth,setBudget,save
     )
 }
 
-const ModalAdd = ({children,handleCloseDetail,show}) => {
+const ModalAdd = ({children,handleCloseAdd,show}) => {
     return(
         <>
-        <Modal show={show} onHide={() => handleCloseDetail()} dialogClassName="modal-80w" aria-labelledby="example-custom-modal-styling-title">
+        <Modal show={show} onHide={() => handleCloseAdd()} dialogClassName="modal-80w" aria-labelledby="example-custom-modal-styling-title">
             <Modal.Header closeButton>
                 <Modal.Title id="example-custom-modal-styling-title">
-                    Custom Modal Styling
+                    Add Data
                 </Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {children}
             </Modal.Body>
         </Modal>
+        </>
+    )
+}
+
+const FormAdd = ({API_URL,shop,showAlert,handleCloseAdd,reloadData,setReloadData}) => {
+    const currentDate = new Date();
+    currentDate.setMonth(currentDate.getMonth() + 1)
+    const Month = `${currentDate.toLocaleString('default', { month: 'short' })} ${currentDate.getFullYear()}`
+    const [IA,setIA] = useState("")
+    const [Investment,setInvestment] = useState("")
+    const [Description,setDescription] = useState("")
+    const [ShowDescription,setShowDescription] = useState(false)
+    const [otherShop1,setotherShop1] = useState("")
+    const [otherShop2,setotherShop2] = useState("")
+    const [dataCapexImprove, setdataCapexImprove] = useState([])
+    const [dataCapexReplace, setdataCapexReplace] = useState([])
+    const [dataCapexImproveOS1, setdataCapexImproveOS1] = useState([])
+    const [dataCapexReplaceOS1, setdataCapexReplaceOS1] = useState([])
+    const [dataCapexImproveOS2, setdataCapexImproveOS2] = useState([])
+    const [dataCapexReplaceOS2, setdataCapexReplaceOS2] = useState([])
+    const [activityPick,setactivityPick] = useState("")
+    const [useBudget,setuseBudget] = useState({})
+    const [useBudgetOther,setuseBudgetOther] = useState({})
+    const Invest = ["Improvement","Replacement"]
+
+    const setupActivity = (value) => {
+        if(value === activityPick){
+            setactivityPick("")
+            setDescription("")
+        }else{
+            setactivityPick(value)
+            setDescription(value)
+        }
+    }
+
+    const getDataCapexAdd = async (shop,tipe) => {
+        try {
+            const month = tipe === "self" ? 12 : currentDate.getMonth()
+            const formData = new FormData()
+            formData.append("shop",shop)
+            formData.append("month_3",month)
+
+            const result = await axios.post(`${API_URL}/getDataCapexAdd`,formData)
+            if(result.status === 200){
+                const data = result.data.res;
+                if(tipe === "self"){
+                    data.Improvement && setdataCapexImprove(data.Improvement)
+                    data.Replacement && setdataCapexReplace(data.Replacement)
+                }else if(tipe === "OS1"){
+                    data.Improvement && setdataCapexImproveOS1(data.Improvement)
+                    data.Replacement && setdataCapexReplaceOS1(data.Replacement)
+                }else if(tipe === "OS2"){
+                    data.Improvement && setdataCapexImproveOS2(data.Improvement)
+                    data.Replacement && setdataCapexReplaceOS2(data.Replacement)
+                }
+            }
+        } catch (error) {
+            showAlert("Error","Mohon maaf ada kesalahan tak terduga","error");
+            console.error(error.response)
+        }
+    }
+
+    const updateUseBudget = (idActivity,nominal,remainBudget,activity,self = false) => {
+        if(nominal > remainBudget){
+            showAlert("Error","Maaf budget yang anda masukkan melebihi sisa budget","error")
+        }else{
+            if(self){
+                setuseBudget(prevBudget => ({
+                    ...prevBudget,
+                    [idActivity]:nominal
+                }))
+            }else{
+                setuseBudgetOther(prevBudgetOther => ({
+                    ...prevBudgetOther,
+                    [idActivity]:nominal
+                }))
+            }
+        }
+    }
+
+    const saveDataActivity = async () => {
+        try {
+            const formData = new FormData()
+            formData.append("ia",IA)
+            formData.append("investment",Investment)
+            formData.append("shop",shop)
+            formData.append("description",Description)
+            formData.append("useBudget",JSON.stringify(useBudget))
+            formData.append("useBudgetOther",JSON.stringify(useBudgetOther))
+
+            const action = await axios.post(`${API_URL}/saveDataActivity`,formData,
+                {
+                    headers: {"Content-Type": "application/json"}
+                }
+            )
+            console.log(action)
+            if(action.status === 200){
+                handleCloseAdd()
+                setReloadData(!reloadData)
+                showAlert("Sukses","Data berhasil disimpan","success")
+            }
+        } catch (error) {
+            showAlert("Error","Maaf ada kesalahan tak terduga","error")
+            console.error(error.response)
+        }
+    } 
+
+    useEffect(() => {
+        Investment !== "" && getDataCapexAdd(shop,"self")
+        otherShop1 !== "" && getDataCapexAdd(otherShop1,"OS1")
+        otherShop2 !== "" && getDataCapexAdd(otherShop2,"OS2")
+    },[Investment,otherShop1,otherShop2])
+
+    return(
+        <>
+        <div className="row">
+            <div className="col-lg-6">
+                <div className="row">
+                    <div className="col-lg-12">
+                        <h5>Month : {Month}</h5>
+                    </div>
+                    <div className="col-lg-12 mb-2">
+                        <p className='mb-1'>No. IA</p>
+                        <input type="text" className="form-control" value={IA} onChange={(e) => setIA(e.target.value)} placeholder='Masukkan Nomor IA' />
+                    </div>
+                    <div className="col-lg-12 mb-2">
+                        <p className='mb-1'>Investment</p>
+                        <select className="form-control" defaultValue={Investment} onChange={(e) => setInvestment(e.target.value)}>
+                            <option value="">Pilih Investment</option>
+                            <option>Improvement</option>
+                            <option>Replacement</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div className="col-lg-6">
+                {
+                    Investment && 
+                    <div className="col-lg-12 mb-2">
+                        <p className='mb-1'>Description</p>
+                        <select className="form-control" onChange={(e) => setShowDescription(e.target.value === "Other" ? true : false)}>
+                            <option value="" { ...Description === "" && "selected" }>Pilih Description</option>
+                            <option value="Other" { ...Description !== "" && "selected" }>Other</option>
+                        </select>
+                        {
+                            ShowDescription &&
+                            <textarea className="form-control mt-2" placeholder='Masukkan Activity' rows={4} onChange={(e) => setDescription(e.target.value)} value={Description === "Other" ? "" : Description}></textarea>
+                        }
+                    </div>
+                }
+            </div>
+            <div className="col-12 text-center mt-3"><h4>USE BUDGET FROM</h4></div>
+            <div className="col-12">
+                {
+                    Invest.map((value,_) => {
+                        const data = value === "Improvement" ? dataCapexImprove : dataCapexReplace
+                        return(
+                            <TableActivity title={value} data={data} updateUseBudget={updateUseBudget} self={true} setupActivity={setupActivity} activityPick={activityPick} />
+                        )
+                    })
+                }
+            </div>
+            <div className="col-lg-12">
+                <h4 className='mb-1'>Other Shop :</h4>
+            </div>
+            <div className="col-lg-6 mb-2">
+                <p className='mb-1'>Other Shop 1</p>
+                <select className="form-control" onChange={(e) => setotherShop1(e.target.value)}>
+                    <option value="">Pilih Shop</option>
+                    {
+                        arrayDept.map((value,index) => (
+                            <option key={index} value={value}>{value}</option>
+                        ))
+                    }
+                </select>
+                {
+                    otherShop1 && Invest.map((value,_) => {
+                        const data = value === "Improvement" ? dataCapexImproveOS1 : dataCapexReplaceOS1
+                        return(
+                            <TableActivity title={value} data={data} updateUseBudget={updateUseBudget} self={false} />
+                        )
+                    })
+                }
+            </div>
+            <div className="col-lg-6 mb-2">
+                <p className='mb-1'>Other Shop 2</p>
+                <select className="form-control" onChange={(e) => setotherShop2(e.target.value)}>
+                    <option value="">Pilih Shop</option>
+                    {
+                        arrayDept.map((value,index) => (
+                            <option key={index} value={value}>{value}</option>
+                        ))
+                    }
+                </select>
+                {
+                    otherShop2 && Invest.map((value,_) => {
+                        const data = value === "Improvement" ? dataCapexImproveOS2 : dataCapexReplaceOS2
+                        return(
+                            <TableActivity title={value} data={data} updateUseBudget={updateUseBudget} self={false} />
+                        )
+                    })
+                }
+            </div>
+            <div className="col-12 mt-3 text-end">
+                <Button variant='primary' onClick={() => saveDataActivity()}><i className="fas fa-save me-1"></i>Simpan</Button>
+            </div>
+        </div>
+        </>
+    )
+}
+
+const TableActivity = ({title,data,updateUseBudget,self,setupActivity,activityPick}) => {
+    return(
+        <>
+            <center><h5 className='mt-3 mb-2'>{title}</h5></center>
+            <table className="table table-sm table-bordered table-hover" style={{fontSize:"10pt"}}>
+                <thead className="thead-light">
+                    <tr className='text-center align-middle'>
+                        {
+                            self && <th>Pick</th>
+                        }
+                        <th>Activity</th>
+                        <th>Plan</th>
+                        <th>Total Usage</th>
+                        <th>Remain Budget</th>
+                        <th>Month Plan</th>
+                        <th>Use Budget</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {
+                        data.length > 0 
+                        ? Array.isArray(data) && data.map((value,index) => (
+                            <tr key={index} className={`${value.class} text-center`}>
+                                {
+                                    self && 
+                                    <td className='ps-2 align-middle'>
+                                        <Button variant={activityPick === value.category ? "success" : "warning"} className='btn-sm' onClick={() => setupActivity(value.category)}>
+                                            {
+                                                activityPick === value.category ? "Picked" : "Pick"
+                                            }
+                                        </Button>
+                                    </td>
+                                }
+                                <td className='ps-2 align-middle text-start'>{value.category}</td>
+                                <td className='ps-2 align-middle'>{value.planBudget}</td>
+                                <td className='ps-2 align-middle'>{value.prevUsage}</td>
+                                <td className='ps-2 align-middle'>{value.budget}</td>
+                                <td className='ps-2 align-middle'>{value.monthPlan}</td>
+                                <td className='ps-2 align-middle d-flex justify-content-center'>
+                                    {
+                                        value.full === "" ? <input type="text" className={`${value.class} form-control text-center`} defaultValue={0} style={{maxWidth:"100px"}} onChange={(e) => updateUseBudget(value.id,e.target.value,value.budget,value.category,self)} /> : "0"
+                                    }
+                                </td>
+                            </tr>
+                        ))
+                        : 
+                        <tr>
+                            <td colSpan={6} className='text-center'>Tidak ada data</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </>
     )
 }

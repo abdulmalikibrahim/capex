@@ -15,7 +15,7 @@ import {
 ChartJS.register(CategoryScale, LinearScale, PointElement, BarElement, Title, Tooltip, Legend);
 
 
-const Graph = ({dataPlan,dataActual,dataBFOS,dataBTOS,formatNumber}) => {
+const Graph = ({pdfRef,dataPlan,dataActual,dataBFOS,dataBTOS,formatNumber,shop}) => {
     const barChartLabelsPlugin = {
         id: 'barChartLabels',
         afterDatasetsDraw(chart) {
@@ -105,9 +105,12 @@ const Graph = ({dataPlan,dataActual,dataBFOS,dataBTOS,formatNumber}) => {
                 position: 'top',
             },
             title: {
-            display: true,
-                text: 'CAPEX MONITORING',
-            },
+                display: true,
+                text: `CAPEX MONITORING ${shop}`,
+                font: {
+                    size: 40 // Ubah ukuran font sesuai kebutuhan
+                }
+            }
         },
         scales: {
             x: {
@@ -128,7 +131,7 @@ const Graph = ({dataPlan,dataActual,dataBFOS,dataBTOS,formatNumber}) => {
     };
 
     return (
-        <div className="chart-container" style={{height:"56rem"}}>
+        <div className="chart-container" style={{height:"56rem"}} ref={pdfRef}>
             <Bar data={data} options={options} plugins={[barChartLabelsPlugin]} />
         </div>
     );

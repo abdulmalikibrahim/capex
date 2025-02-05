@@ -22,8 +22,8 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Index title={"CAPEX "+shop} shop={shop}setShop={setShop} Content={<Home shop={shop} API_URL={API_URL} showAlert={showAlert} idDelete={idDelete} /> } /> } />
-        <Route path="/home" element={<Index title={"CAPEX "+shop} shop={shop}setShop={setShop} Content={<Home shop={shop} API_URL={API_URL} showAlert={showAlert} idDelete={idDelete} /> } /> } />
+        <Route path="/" element={<Index shop={shop}setShop={setShop} Content={<Home shop={shop} API_URL={API_URL} showAlert={showAlert} idDelete={idDelete} /> } /> } />
+        <Route path="/home" element={<Index shop={shop}setShop={setShop} Content={<Home shop={shop} API_URL={API_URL} showAlert={showAlert} idDelete={idDelete} /> } /> } />
       </Routes>
     </Router>
   );
