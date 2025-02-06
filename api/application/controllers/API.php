@@ -315,6 +315,7 @@ class API extends MY_Controller {
                     "Category" => $description,
                     "Invest" => $investment,
                     "BTOS" => $shop,
+                    "Actual" => $value,
                     "Nominal_BTOS" => $value,
                     "activity_BTOS" => $key,
                     "Month_BTOS" => $monthActual,
@@ -353,6 +354,108 @@ class API extends MY_Controller {
         }
 
         $fb = ["statusCode" => 200, "res" => "Data berhasil diupdate"];
+        $this->fb($fb);
+    }
+
+    function getShop($return = false)
+    {
+        $shop = $this->model->gd("shop","shop","id !=","result");
+        $fb = ["statusCode" => 200, "res" => $shop];
+        if($return){
+            return $fb; 
+        }else{
+            $this->fb($fb); 
+        }
+    }
+
+    private function formatingNumber($number)
+    {
+        $format = str_replace(",00","",number_format(round($number,2),2,",","."));
+        return $format;
+    }
+
+    function getDataReporting()
+    {
+        $getShop = $this->getShop(true);
+        $dataShop = $getShop["res"];
+        $invest = ["Improvement","Replacement"];
+        $dataResult = [];
+        foreach ($dataShop as $key => $value) {
+            $shop = $value->shop;
+            foreach ($invest as $kInvest => $vInvest) {
+                //CARI UNTUK ROWSPAN TABLE SHOP TITLE
+                $countData = $this->model->gd("datacapex","COUNT(id) as rowData","shop = '$shop' AND Invest = '$vInvest' AND (Actual != '' OR BFOS != '')","row");
+                $rowSpan = ($countData->rowData + 1); //+3 UNTUK COVER ROW YANG LAIN
+                $totalPlan = $this->model->gd("datacapex","SUM(Budget) as total","shop = '$shop' AND Invest = '$vInvest'","row");
+                $totalActual = $this->model->gd("datacapex","SUM(Actual) as total","shop = '$shop' AND Invest = '$vInvest'","row");
+                $totalBFOS = $this->model->gd("datacapex","SUM(Nominal_BFOS) as total","shop = '$shop' AND Invest = '$vInvest'","row");
+                $totalBTOS = $this->model->gd("datacapex","SUM(Nominal_BTOS) as total","shop = '$shop' AND Invest = '$vInvest'","row");
+                $dataSummaryMonth = [];
+                for ($i=1; $i <= 12; $i++) { 
+                    $getDataActual = $this->model->gd("datacapex","SUM(Actual) as total","shop = '$shop' AND Invest = '$vInvest' AND Month = '$i'","row");
+                    $getDataBTOS = $this->model->gd("datacapex","SUM(Nominal_BTOS) as total","shop = '$shop' AND Invest = '$vInvest' AND Month_BTOS = '$i'","row");
+                    $totalActualMonth = empty($getDataActual->total) ? 0 : $getDataActual->total;
+                    $totalBTOSMonth = empty($getDataBTOS->total) ? 0 : $getDataBTOS->total;
+                    $dataSummaryMonth[$i] = $this->formatingNumber($totalActualMonth + $totalBTOSMonth);
+                }
+
+                $dataResult[$shop][$vInvest] = [
+                    "rowSpan" => ($rowSpan+1),
+                    "totalPlan" => $this->formatingNumber($totalPlan->total),
+                    "totalActual" => $this->formatingNumber($totalActual->total),
+                    "totalRemainBudget" => $this->formatingNumber(($totalPlan->total - $totalActual->total)),
+                    "totalBFOS" => $this->formatingNumber($totalBFOS->total),
+                    "totalBTOS" => $this->formatingNumber($totalBTOS->total),
+                    "data" => [],
+                    "dataSummaryMonth" => $dataSummaryMonth
+                ];
+
+                $data = $this->model->gd("datacapex","*","shop = '$shop' AND Invest = '$vInvest' AND (Actual != '' OR BFOS != '')","result");
+                if(empty($data)){
+                    continue;
+                }
+
+                $dataUsage = []; //MENGENOLKAN NILAI DATA USAGE
+                foreach ($data as $row) {
+                    $dataBFOS = $this->model->gd("datacapex","SUM(Nominal_BFOS) as total","activity_BFOS = '$row->Id'","row");
+                    $type = "";
+                    $usage = "";
+                    $month = "";
+                    $keterangan = "";
+                    if(!empty($row->Actual) && !empty(!empty($row->Month))){
+                        $type = "Actual";
+                        $usage = $row->Actual;
+                        $month = $row->Month;
+                    }else if(!empty($row->BFOS)){
+                        $type = "BFOS";
+                        $usage = $row->Nominal_BFOS;
+                        $month = $row->Month_BFOS;
+                        $getDataBFOS = $this->model->gd("datacapex","Category","Id = '$row->Id'","row");
+                        $keterangan = "Budget From : ".$row->BFOS." (".$getDataBFOS->Category.")";
+                    }else if(!empty($row->BTOS)){
+                        $type = "BTOS";
+                        $usage = $row->Nominal_BTOS;
+                        $month = $row->Month_BTOS;
+                        $getDataBTOS = $this->model->gd("datacapex","Category","Id = '$row->Id'","row");
+                        $keterangan = "Budget For : ".$row->BTOS." (".$getDataBTOS->Category.")";
+                    }
+                    $remainBudget = (empty($row->Budget) ? 0 : $row->Budget) - ((empty($row->Actual) ? 0 : $row->Actual) + (empty($dataBFOS->total) ? 0 : $dataBFOS->total));
+                    $dataUsage[] = [
+                        "type" => $type,
+                        "category" => $row->Category,
+                        "plan" => $row->Budget,
+                        "remainBudget" => $remainBudget > 0 ? $this->formatingNumber($remainBudget) : "",
+                        "month" => intval($month),
+                        "usage" => floatval($usage),
+                        "ia" => $row->No_IA,
+                        "keterangan" => $keterangan
+                    ];
+
+                    $dataResult[$shop][$vInvest]["data"] = $dataUsage;
+                }
+            }
+        }
+        $fb = ["statusCode" => 200, "res" => $dataResult];
         $this->fb($fb);
     }
 }

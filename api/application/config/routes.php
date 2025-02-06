@@ -59,3 +59,5 @@ $route['addCapex'] = 'API/prosesCapex/add';
 $route['deleteCapex'] = 'API/deleteCapex';
 $route['getDataCapexAdd'] = 'API/getDataCapexAdd';
 $route['saveDataActivity'] = 'API/saveDataActivity';
+$route['getDataReporting'] = 'API/getDataReporting';
+$route['getShop'] = 'API/getShop';

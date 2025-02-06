@@ -8,7 +8,7 @@ const Index = ({ shop, setShop, Content }) => {
                 <div className="col-2">
                     <SideBar shop={shop} setShop={setShop} />
                 </div>
-                <div className="col-10">
+                <div className="col-10" style={{maxHeight:"98vh", overflow:"auto"}}>
                     { Content }
                 </div>
             </div>

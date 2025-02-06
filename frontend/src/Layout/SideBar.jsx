@@ -28,16 +28,13 @@ const SideBar = ({ shop, setShop }) => {
                 </div>
                 {buttonData.map(({ label, value, col }) => (
                     <div className={`mt-2 ${col}`} key={value}>
-                    <button
-                        onClick={() => setShop(value)}
-                        className={`btn ${shop === value ? 'btn-primary' : 'btn-info'} border border-dark w-100 fw-bold fs-5`}
-                    >
-                        {label}
-                    </button>
+                        <Link to={"/home"} onClick={() => setShop(value)} className={`btn ${shop === value ? 'btn-primary' : 'btn-info'} border border-dark w-100 fw-bold fs-5`}>
+                            {label}
+                        </Link>
                     </div>
                 ))}
                 <div className="mt-2 col-12">
-                    <Link to={"/tablemonitoring"} className="btn btn-warning border border-dark w-100 fw-bold fs-5">Table Monitoring</Link>
+                    <Link to={"/tablemonitoring"} onClick={() => setShop("tablemonitoring")} className={`btn ${shop === "tablemonitoring" ? 'btn-primary' : 'btn-info'} border border-dark w-100 fw-bold fs-5`}>Table Monitoring</Link>
                 </div>
                 <div className="mt-2 col-12">
                     <Link to={"/summaryreport"} className="btn btn-success border border-dark w-100 fw-bold fs-5">Summary Report</Link>
