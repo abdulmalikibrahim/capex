@@ -108,7 +108,7 @@ const Graph = ({pdfRef,dataPlan,dataActual,dataBFOS,dataBTOS,formatNumber,shop})
                 display: true,
                 text: `CAPEX MONITORING ${shop}`,
                 font: {
-                    size: 40 // Ubah ukuran font sesuai kebutuhan
+                    size: 45 // Ubah ukuran font sesuai kebutuhan
                 }
             }
         },
@@ -131,7 +131,7 @@ const Graph = ({pdfRef,dataPlan,dataActual,dataBFOS,dataBTOS,formatNumber,shop})
     };
 
     return (
-        <div className="chart-container" style={{height:"65rem"}} ref={pdfRef}>
+        <div className="chart-container bg-light border border-dark rounded mb-2" style={{height:"65rem"}} ref={pdfRef}>
             <Bar data={data} options={options} plugins={[barChartLabelsPlugin]} />
         </div>
     );

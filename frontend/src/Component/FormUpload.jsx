@@ -51,10 +51,10 @@ const FormUpload = ({API_URL,setReloadData,reloadData,showAlert,shop}) => {
 
     return (
         <div className='card'>
-            <div className='card-header'>
+            <div className='card-header p-1 ps-2'>
                 Upload Data
             </div>
-            <div className='card-body p-1'>
+            <div className='card-body p-0'>
                 <form onSubmit={handleSubmit}>
                     <div className='input-group'>
                         <input type='file' className='form-control' id='file' accept='.xlsx' onChange={handleFileChange} />

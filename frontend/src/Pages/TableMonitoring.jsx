@@ -154,7 +154,7 @@ const DataTable = ({periodeStart,periodeEnd,dataReport,dataSummary,reload}) => {
                                     Object.entries(dataReport).map(([shop,valueReport]) => (
                                         <>
                                             <tr>
-                                                <td rowSpan={valueReport[invest]["rowSpan"]} className='fw-bold align-middle text-center' style={{fontSize:"13pt"}}>{shop}</td>
+                                                <td rowSpan={valueReport[invest]["rowSpan"]} className='fw-bold align-middle text-center bg-light' style={{fontSize:"13pt"}}>{shop}</td>
                                             </tr>
                                             {
                                                 Object.entries(valueReport[invest]["data"]).map((value,index) => {

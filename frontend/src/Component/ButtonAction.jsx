@@ -4,7 +4,7 @@ import { Button } from 'react-bootstrap'
 const ButtonAction = ({handleShowDetail,handleShowAdd,generatePDF,loadingPrint}) => {
     return(
         <div className="row">
-            <div className="col-12 text-end">
+            <div className="col-12 text-end pe-1">
                 <Button variant='primary' className='me-2' onClick={() => generatePDF()}>
                     {
                         loadingPrint ? <><i className="fas fa-spinner fa-spin"></i> DOWNLOADING...</> : <><i className="fas fa-download me-1"></i>DOWNLOAD</>

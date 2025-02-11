@@ -113,7 +113,7 @@ const Home = ({shop,API_URL,showAlert}) => {
     };
     return (
         <div>
-            <div style={{position:"absolute", right:"10px", top:"10px"}}>
+            <div style={{position:"absolute", left:"21rem", top:"17px"}}>
                 <FormUpload API_URL={API_URL} setReloadData={setReloadData} reloadData={reloadData} showAlert={showAlert} shop={shop} />
             </div>
             <Graph pdfRef={pdfRef} formatNumber={formatNumber} dataPlan={dataPlan} dataActual={dataActual} dataBFOS={dataBFOS} dataBTOS={dataBTOS} shop={shop} />
