@@ -131,7 +131,7 @@ const Graph = ({pdfRef,dataPlan,dataActual,dataBFOS,dataBTOS,formatNumber,shop})
     };
 
     return (
-        <div className="chart-container" style={{height:"56rem"}} ref={pdfRef}>
+        <div className="chart-container" style={{height:"65rem"}} ref={pdfRef}>
             <Bar data={data} options={options} plugins={[barChartLabelsPlugin]} />
         </div>
     );
