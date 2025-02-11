@@ -61,3 +61,5 @@ $route['getDataCapexAdd'] = 'API/getDataCapexAdd';
 $route['saveDataActivity'] = 'API/saveDataActivity';
 $route['getDataReporting'] = 'API/getDataReporting';
 $route['getShop'] = 'API/getShop';
+$route['getSummaryReport'] = 'API/getSummaryReport';
+$route['uploadData'] = 'API/uploadData';

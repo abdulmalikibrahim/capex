@@ -5,6 +5,7 @@ import Home from './Pages/Home';
 import Index from './Layout/Index';
 import Swal from 'sweetalert2';
 import TableMonitoring from './Pages/TableMonitoring';
+import SummaryReport from './Pages/SummaryReport';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
@@ -25,6 +26,7 @@ const App = () => {
         <Route path="/" element={<Index shop={shop} setShop={setShop} Content={<Home shop={shop} API_URL={API_URL} showAlert={showAlert} /> } /> } />
         <Route path="/home" element={<Index shop={shop} setShop={setShop} Content={<Home shop={shop} API_URL={API_URL} showAlert={showAlert} /> } /> } />
         <Route path="/tablemonitoring" element={<Index shop={shop} setShop={setShop} Content={<TableMonitoring API_URL={API_URL} showAlert={showAlert} /> } /> } />
+        <Route path="/summaryreport" element={<Index shop={shop} setShop={setShop} Content={<SummaryReport API_URL={API_URL} showAlert={showAlert} /> } /> } />
       </Routes>
     </Router>
   );
