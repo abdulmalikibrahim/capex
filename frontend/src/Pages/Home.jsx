@@ -6,7 +6,6 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
-import FormUpload from '../Component/FormUpload';
 
 const Home = ({shop,API_URL,showAlert}) => {
     // Custom plugin untuk menampilkan label di atas batang
@@ -113,10 +112,7 @@ const Home = ({shop,API_URL,showAlert}) => {
     };
     return (
         <div>
-            <div style={{position:"absolute", left:"21rem", top:"17px"}}>
-                <FormUpload API_URL={API_URL} setReloadData={setReloadData} reloadData={reloadData} showAlert={showAlert} shop={shop} />
-            </div>
-            <Graph pdfRef={pdfRef} formatNumber={formatNumber} dataPlan={dataPlan} dataActual={dataActual} dataBFOS={dataBFOS} dataBTOS={dataBTOS} shop={shop} />
+            <Graph pdfRef={pdfRef} formatNumber={formatNumber} dataPlan={dataPlan} dataActual={dataActual} dataBFOS={dataBFOS} dataBTOS={dataBTOS} shop={shop} setReloadData={setReloadData} reloadData={reloadData} showAlert={showAlert} API_URL={API_URL} />
             <ButtonAction handleShowDetail={handleShowDetail} handleShowAdd={handleShowAdd} generatePDF={generatePDF} loadingPrint={loadingPrint} />
             <ModalDetail handleCloseDetail={handleCloseDetail} show={showDetail}>
                 {

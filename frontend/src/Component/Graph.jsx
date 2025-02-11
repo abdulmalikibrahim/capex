@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
+import FormUpload from '../Component/FormUpload';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -15,7 +16,7 @@ import {
 ChartJS.register(CategoryScale, LinearScale, PointElement, BarElement, Title, Tooltip, Legend);
 
 
-const Graph = ({pdfRef,dataPlan,dataActual,dataBFOS,dataBTOS,formatNumber,shop}) => {
+const Graph = ({pdfRef,dataPlan,dataActual,dataBFOS,dataBTOS,formatNumber,shop,setReloadData,reloadData,showAlert,API_URL}) => {
     const barChartLabelsPlugin = {
         id: 'barChartLabels',
         afterDatasetsDraw(chart) {
@@ -131,7 +132,10 @@ const Graph = ({pdfRef,dataPlan,dataActual,dataBFOS,dataBTOS,formatNumber,shop})
     };
 
     return (
-        <div className="chart-container bg-light border border-dark rounded mb-2" style={{height:"65rem"}} ref={pdfRef}>
+        <div className="chart-container bg-light border border-dark rounded mb-2" style={{height:"62rem",position:"relative"}} ref={pdfRef}>
+            <div style={{position:"absolute", right:"0px", top:"0px"}}>
+                <FormUpload API_URL={API_URL} setReloadData={setReloadData} reloadData={reloadData} showAlert={showAlert} shop={shop} />
+            </div>
             <Bar data={data} options={options} plugins={[barChartLabelsPlugin]} />
         </div>
     );

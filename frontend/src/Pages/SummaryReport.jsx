@@ -69,9 +69,9 @@ const SummaryReport = ({API_URL,showAlert}) => {
     return(
         <>
             <div ref={contentRef} style={{marginBottom:"4rem"}}>
+                <TableSummary plant={'total'} dataReport={dataReport} dataReportTotal={dataReportTotal} />
                 <TableSummary plant={"1"} dataReport={dataReport} dataReportTotal={dataReportTotal} />   
                 <TableSummary plant={"2"} dataReport={dataReport} dataReportTotal={dataReportTotal} />
-                <TableSummary plant={'total'} dataReport={dataReport} dataReportTotal={dataReportTotal} />
             </div>
             <ButtonAction handlePrint={handlePrint} exportToExcel={exportToExcel} loadingExcel={loadingExcel} />
         </>
